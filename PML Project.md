@@ -1,51 +1,56 @@
 #PML Project: Weight Lifting Activity Recognition
-Juan José Garcés Iniesta 					Jul-2015
+Juan José Garcés Iniesta
+Jul-2015
 
-##1.- Introduction and objective
-     Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. 
-      In this project, will use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. The goal of the project is to predict the manner in which they did the exercise. 
+#1.- Introduction and objective
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. 
+In this project, will use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. The goal of the project is to predict the manner in which they did the exercise. 
 The source of data for this project is:
 Velloso, E.; Bulling, A.; Gellersen, H.; Ugulino, W.; Fuks, H. Qualitative Activity Recognition of Weight Lifting Exercises. Proceedings of 4th International Conference in Cooperation with SIGCHI (Augmented Human ’13) . Stuttgart, Germany: ACM SIGCHI, 2013
 Read more: http://groupware.les.inf.puc-rio.br/har#ixzz3MCvfqKcP
 
-##2. Data cleaning and EDA
+#2. Data cleaning and EDA
 Data loading:   With the corresponding options in read.csv function, I load all the empty cells as NA cells. This make easier to clean the incomplete data/columns
 
+```
 sourceTraining <- read.csv("pml-training.csv", na.strings = c("NA", "", "#DIV/0!"))
 sourceTesting <- read.csv("pml-testing.csv", na.strings = c("NA", "", "#DIV/0!"))
-
+```
 
 Data cleaning: I will use only the columns without NA values as predictors 
+```
 colsToTake <- colSums(is.na(sourceTraining))==0
+```
 I must use the same columns in train and test set. So I'll use the same index vector to clean it.  
-
+```
 cleanTrainData <- sourceTraining[ ,colsToTake]
 cleanTestData <- sourceTesting[ ,colsToTake]
-
+```
 
 An examination of the data shows that there are several columns with no relevance information for our purpose (1:7)
 * Col 1 Index (not relevant)
 * Col 2 user_name (not relevant)
 * Col 3:7 time and window number (not relevant)
-
+```
 cleanTrainData <- cleanTrainData[ ,c(8:60)]
 cleanTestData <- cleanTestData[ ,c(8:60)]
-
+```
 
 Now we have 53 columns/variables from 160 initial variables. The last one is different in each set. In training set, is the class (A, B, C, D, E) of this observation. In test set is "problem_id", and the class must be predicted by the model constructed
 Now I plot an histogram to see the classe distribution of the full cleaned set of data: 
-
+```
 hist(as.numeric(cleanTrainData$classe), 
      main="Distribution of class in train set (19622 obs.)", 
      xlab="Class", col="blue", xaxt="n")
 axis(1, 1:5, c("A","B","C","D","E")
-
+```
 	
 
-##3. Modelling
+#3. Modelling
 The Random Forest algorithm was discussed in the third week of the Practical Machine Learning Course. Due his effectivity and performance, it’s widely used and this is the Model of Choice in this project.
 I shall now train a model with 66% of the pmlTraining data set.
-# Partitioning
+```
+#Partitioning
 > inTrain <- createDataPartition(y=cleanTrainData$classe, p=0.66, list=FALSE)
 > training <- cleanTrainData[inTrain, ]
 > testing <- cleanTrainData[-inTrain, ]
@@ -74,14 +79,16 @@ Resampling results across tuning parameters:
 
 Accuracy was used to select the optimal model using  the largest value.
 The final value used for the model was mtry = 27. 
-
+```
 
 It’s useful to study the relative importance of each variable. 
 
 
 
 
+
 The In-Sample Error or Resubstitution Error is defined “as the error rate you get on the same data set you used to build your predictor”.
+```
 > InTable <- confusionMatrix(Inpredictions, training$classe)
 > InTable
 Confusion Matrix and Statistics
@@ -115,12 +122,13 @@ Prevalence             0.2843   0.1935   0.1744   0.1639   0.1838
 Detection Rate         0.2843   0.1935   0.1744   0.1639   0.1838
 Detection Prevalence   0.2843   0.1935   0.1744   0.1639   0.1838
 Balanced Accuracy      1.0000   1.0000   1.0000   1.0000   1.0000
+```
 
-     We can observe a perfect prediction (Accuracy = 1 = 100% success). This is because I have compared the results of the prediction with the same data set used to train the model.  I have to evaluate the Out-Sample error in order to check there is no overfiting.
+We can observe a perfect prediction (Accuracy = 1 = 100% success). This is because I have compared the results of the prediction with the same data set used to train the model.  I have to evaluate the Out-Sample error in order to check there is no overfiting.
 
-##4. Evaluation
+#4. Evaluation
 Now I’ll test the fifted model with the test data set (testing) and I will check the results in order of Accuracy
-
+```
 > Outpredictions <- predict(modelRF, testing)
 > OutTable <- confusionMatrix(Outpredictions, testing$classe)
 > OutTable
@@ -156,10 +164,10 @@ Detection Rate         0.2836   0.1921   0.1730   0.1622   0.1829
 Detection Prevalence   0.2845   0.1939   0.1754   0.1631   0.1831
 Balanced Accuracy      0.9978   0.9954   0.9947   0.9944   0.9975
 
-
+```
 We have a very high accuracy (99,39%) with the model trained. Only 41 wrong predictions from 6669 cases.
 Now I’ll use the model fifted to predict the sourceTesting data given (pml-testing.csv) in order to complete the project task.
-
+```
 > projectpredictions<-predict(modelRF, cleanTestData)
 
 > projectpredictions
@@ -170,11 +178,12 @@ Levels: A B C D E
 > answers
  [1] "B" "A" "B" "A" "A" "E" "D" "B" "A" "A" "B" "C" "B" "A" "E" "E" "A" "B" "B" "B"
 
-
-Out-of- Sample error
+```
+##Out-of- Sample error
 As a project requeriment, a Out-of-Sample error must be evaluated via cross-validation. Out-of-sample error or the generalization error is defined as “ the error you get on a new data set”.   
 To make this in a “manual” way, I have splitted  the training data into two groups of 50% (aprox.)of the total training data set: cv01 and cv02.
 First, I use cv01 as training set to fit a model “modelcv01”, and I use cv02 data set to validate it and see results. Later, I use cv02 as training set to fit a model “modelcv02”, and I use cv01 data set to validate it and see results. The average accuracy will be more representative from a real behavior of the model with new data.
+```
 > inTraincv <- createDataPartition(y=training$classe, p=0.5, list=FALSE)
 > cv01<-training[inTraincv, ]
 > cv02<-training[-inTraincv, ]
@@ -252,9 +261,9 @@ Prevalence             0.2843   0.1935   0.1744   0.1639   0.1838
 Detection Rate         0.2831   0.1874   0.1710   0.1614   0.1821
 Detection Prevalence   0.2871   0.1892   0.1763   0.1648   0.1826
 Balanced Accuracy      0.9950   0.9829   0.9871   0.9904   0.9951
-
+```
 With “modelcv01” we have 107 errors from 6474  and with “modelcv02” we have 97 errors from 6479. 
 The Out-of-sample error is (107+97)/12953 = 0.0157 = 1,57%  
 
-##5. Conclusion
+#5. Conclusion
 The model fifted using Random forest has an excellent accuracy in the studied problem.  It has been obtained a 99% accuracy with testing data set and more than 98% accuracy in Out-of-Sample error studied with 2-fold cross validation.
